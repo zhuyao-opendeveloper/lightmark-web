@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "lastSync": 1690000000000,
+  "todos": [
+    {
+      "id": "todo_sample_1",
+      "title": "在 GitHub 新建 lightmark-data 仓库",
+      "description": "用于多端同步。推荐设为私有仓库。",
+      "isCompleted": false,
+      "priority": "HIGH",
+      "categoryId": "cat_sample_1",
+      "tags": ["配置", "同步"],
+      "dueDate": null,
+      "startDate": null,
+      "isPinned": true,
+      "isBlocked": false,
+      "status": "ACTIVE",
+      "isArchived": false,
+      "isDeleted": false,
+      "deletedAt": null,
+      "parentId": null,
+      "recurrenceRule": null,
+      "createdAt": 1690000000000,
+      "updatedAt": 1690000000000,
+      "completedAt": null
+    },
+    {
+      "id": "todo_sample_2",
+      "title": "试试 AI 快捷操作：把一段话拆成待办",
+      "description": "在「AI 助手」页输入一段计划，点「生成待办」。",
+      "isCompleted": false,
+      "priority": "MEDIUM",
+      "categoryId": "cat_sample_2",
+      "tags": ["AI"],
+      "dueDate": null,
+      "startDate": null,
+      "isPinned": false,
+      "isBlocked": false,
+      "status": "ACTIVE",
+      "isArchived": false,
+      "isDeleted": false,
+      "deletedAt": null,
+      "parentId": null,
+      "recurrenceRule": "WEEKLY",
+      "createdAt": 1690000000000,
+      "updatedAt": 1690000000000,
+      "completedAt": null
+    }
+  ],
+  "categories": [
+    { "id": "cat_sample_1", "name": "配置", "color": 4284153022, "icon": "settings", "createdAt": 1690000000000 },
+    { "id": "cat_sample_2", "name": "灵感", "color": 4283215696, "icon": "bulb", "createdAt": 1690000000000 }
+  ]
+}

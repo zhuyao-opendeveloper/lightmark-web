@@ -2,268 +2,377 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>轻刻 · 网页版 LightMark Web</title>
-  <meta name="description" content="轻刻待办的网页版：本地管理 + GitHub 多端同步 + AI 助手。数据契约与 App 完全互通。" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>轻刻 · 网页版</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <!-- 登录 / 欢迎页（可跳过，由 app.js 控制显示） -->
-  <div id="loginModal" class="modal" hidden>
-    <div class="modal-box">
-      <div class="login-logo">轻</div>
-      <h2>欢迎使用 轻刻 · 网页版</h2>
-      <p class="muted">本地优先的待办管理，可配合 App 与 GitHub 多端同步。<br/>无需注册，数据只存在你本机。</p>
-      <label style="display:block;text-align:left;font-size:13px;color:var(--text-muted);margin-bottom:4px">昵称（可选）
-        <input id="loginName" type="text" placeholder="怎么称呼你？" style="width:100%;margin-top:6px" />
-      </label>
-      <div class="login-actions">
-        <button id="loginEnter" class="btn primary">开始使用</button>
-        <button id="loginSkip" class="btn">跳过</button>
-      </div>
-    </div>
-  </div>
-
+<body data-theme="light">
+  <!-- 顶栏 -->
   <header class="topbar">
-    <div class="brand">
-      <span class="logo">轻</span>
-      <div>
-        <h1>轻刻 · 网页版</h1>
-        <p class="sub">LightMark Web · 离线 App 的在线搭档</p>
-      </div>
-    </div>
-    <div class="topbar-actions">
+    <div class="brand">轻刻 <span class="brand-sub">网页版</span></div>
+    <div class="top-actions">
+      <button id="syncBtn" class="icon-btn" title="GitHub 同步">🔄</button>
+      <button id="lockBtn" class="icon-btn" title="应用锁">🔒</button>
       <button id="themeBtn" class="icon-btn" title="切换主题">🌓</button>
     </div>
   </header>
 
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="todos">📋 待办</button>
-    <button class="tab" data-tab="sync">☁️ 同步</button>
-    <button class="tab" data-tab="ai">🤖 AI 助手</button>
-    <button class="tab" data-tab="about">ℹ️ 说明</button>
+  <!-- 页签 -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="todo">待办</button>
+    <button class="tab" data-tab="habit">习惯</button>
+    <button class="tab" data-tab="goal">目标</button>
+    <button class="tab" data-tab="template">模板</button>
+    <button class="tab" data-tab="review">回顾</button>
+    <button class="tab" data-tab="settings">设置</button>
   </nav>
 
   <main>
-    <!-- 待办面板 -->
-    <section id="panel-todos" class="panel active">
+    <!-- ============ 待办 ============ -->
+    <section id="panel-todo" class="panel active">
+      <div class="view-switch">
+        <button class="vbtn active" data-view="list">列表</button>
+        <button class="vbtn" data-view="kanban">看板</button>
+        <button class="vbtn" data-view="quadrant">四象限</button>
+        <button class="vbtn" data-view="table">表格</button>
+      </div>
+
+      <div class="chips" id="smartChips"></div>
+
       <div class="toolbar">
-        <input id="searchInput" class="search" type="search" placeholder="搜索标题 / 标签 / 描述…" />
-        <select id="filterPriority" class="select">
-          <option value="">全部优先级</option>
-          <option value="URGENT">紧急</option>
-          <option value="HIGH">高</option>
-          <option value="MEDIUM">中</option>
-          <option value="LOW">低</option>
-          <option value="IDLE">空闲</option>
+        <input id="searchInput" class="search" placeholder="搜索标题 / 备注 / 标签…" />
+        <select id="filterPriority" class="mini"><option value="">优先级</option></select>
+        <select id="filterStatus" class="mini"><option value="">状态</option></select>
+        <select id="filterCategory" class="mini"><option value="">分类</option></select>
+        <select id="sortOrder" class="mini">
+          <option value="pin_prio">置顶→优先级</option>
+          <option value="created_desc">最近创建</option>
+          <option value="created_asc">最早创建</option>
+          <option value="due_asc">截止最近</option>
+          <option value="alpha">标题</option>
         </select>
-        <select id="filterStatus" class="select">
-          <option value="">全部状态</option>
-          <option value="ACTIVE">进行中</option>
-          <option value="PAUSED">暂停</option>
-          <option value="CANCELLED">已取消</option>
-          <option value="ARCHIVED">已归档</option>
-        </select>
-        <select id="filterCategory" class="select">
-          <option value="">全部分类</option>
-        </select>
-        <button id="addTodoBtn" class="btn primary">+ 新建待办</button>
-        <button id="manageCatBtn" class="btn">分类管理</button>
+        <button id="batchBtn" class="mini outline">批量</button>
+        <button id="manageCatBtn" class="mini outline">分类</button>
+        <button id="addTodoBtn" class="primary">+ 待办</button>
+      </div>
+
+      <!-- 批量操作条 -->
+      <div id="batchBar" class="batch-bar" hidden>
+        <label><input type="checkbox" id="batchAll" /> 全选</label>
+        <button class="mini" data-batch="done">完成</button>
+        <button class="mini" data-batch="archive">归档</button>
+        <button class="mini" data-batch="private">私密</button>
+        <button class="mini danger" data-batch="delete">删除</button>
+        <button class="mini" data-batch="exit">退出</button>
       </div>
 
       <div id="statsBar" class="stats"></div>
 
-      <ul id="todoList" class="todo-list"></ul>
-      <p id="emptyHint" class="empty-hint" hidden>还没有待办。点「新建待办」开始，或从「同步」页导入。</p>
-    </section>
-
-    <!-- 同步面板 -->
-    <section id="panel-sync" class="panel">
-      <div class="card">
-        <h2>GitHub 仓库同步</h2>
-        <p class="muted">把数据以 <code>lightmark-data.json</code> 的形式存到你的 GitHub 仓库，实现多设备（含 App）互通。Token 仅保存在本机并只发给 api.github.com。</p>
-        <div class="form-grid">
-          <label>仓库所有者 (owner)
-            <input id="ghOwner" type="text" placeholder="your-github-id" />
-          </label>
-          <label>仓库名 (repo)
-            <input id="ghRepo" type="text" placeholder="lightmark-data" />
-          </label>
-          <label>分支 (branch)
-            <input id="ghBranch" type="text" placeholder="main" />
-          </label>
-          <label>Personal Access Token
-            <input id="ghToken" type="password" placeholder="ghp_… 需 repo 或 public_repo 权限" />
-          </label>
-        </div>
-        <div class="row">
-          <button id="ghSave" class="btn">保存配置</button>
-          <button id="ghPull" class="btn">⬇️ 拉取</button>
-          <button id="ghPush" class="btn primary">⬆️ 推送</button>
-          <span id="ghStatus" class="status"></span>
-        </div>
-        <p class="muted small">提示：推荐用<strong>私有仓库</strong>。Token 在 GitHub → Settings → Developer settings → PAT 生成，勾选 <code>repo</code> 范围。</p>
+      <!-- 列表视图 -->
+      <div id="view-list" class="view">
+        <ul id="todoList" class="todo-list"></ul>
+        <p id="emptyHint" class="empty">还没有待办，点右上角「+ 待办」开始吧。</p>
       </div>
 
-      <div class="card">
-        <h2>本地备份 / 与 App 互通</h2>
-        <p class="muted">导出或导入的 JSON 与 Android App 的「备份导出」格式完全一致（<code>SyncData</code> 契约），可直接在 App 内导入。</p>
-        <div class="row">
-          <button id="exportBtn" class="btn">⬇️ 导出 JSON</button>
-          <label class="btn file-btn">⬆️ 导入 JSON
-            <input id="importFile" type="file" accept="application/json,.json" hidden />
-          </label>
-          <button id="clearBtn" class="btn danger">🗑️ 清空本地</button>
-        </div>
+      <!-- 看板视图 -->
+      <div id="view-kanban" class="view" hidden>
+        <div id="kanban" class="kanban"></div>
+      </div>
+
+      <!-- 四象限 -->
+      <div id="view-quadrant" class="view" hidden>
+        <div id="quadrant" class="quadrant"></div>
+      </div>
+
+      <!-- 表格 -->
+      <div id="view-table" class="view" hidden>
+        <div class="table-wrap"><table id="todoTable"></table></div>
       </div>
     </section>
 
-    <!-- AI 面板 -->
-    <section id="panel-ai" class="panel">
-      <div class="card">
-        <h2>AI 配置（OpenAI 兼容）</h2>
-        <p class="muted">填入你自己的接口地址与密钥，调用聊天补全。不填则使用<strong>本机规则</strong>兜底（纯本地、零联网）。密钥仅存本机，只发往你填写的地址。</p>
-        <div class="form-grid">
-          <label>Base URL
-            <input id="aiBase" type="text" placeholder="https://api.openai.com/v1" />
-          </label>
-          <label>API Key
-            <input id="aiKey" type="password" placeholder="sk-…" />
-          </label>
-          <label>模型
-            <input id="aiModel" type="text" placeholder="gpt-3.5-turbo" />
-          </label>
-        </div>
+    <!-- ============ 习惯 ============ -->
+    <section id="panel-habit" class="panel">
+      <div class="panel-head">
+        <h2>习惯打卡</h2>
+        <button id="addHabitBtn" class="primary">+ 习惯</button>
+      </div>
+      <div id="habitList" class="card-list"></div>
+    </section>
+
+    <!-- ============ 目标 ============ -->
+    <section id="panel-goal" class="panel">
+      <div class="panel-head">
+        <h2>目标</h2>
+        <button id="addGoalBtn" class="primary">+ 目标</button>
+      </div>
+      <div id="goalList" class="card-list"></div>
+    </section>
+
+    <!-- ============ 模板 ============ -->
+    <section id="panel-template" class="panel">
+      <div class="panel-head">
+        <h2>任务模板</h2>
+        <button id="addTplBtn" class="primary">+ 自建</button>
+      </div>
+      <div id="tplList" class="card-list"></div>
+    </section>
+
+    <!-- ============ 回顾 ============ -->
+    <section id="panel-review" class="panel">
+      <div class="panel-head">
+        <h2>回顾复盘</h2>
+        <select id="reviewRange" class="mini">
+          <option value="7">近 7 天</option>
+          <option value="30" selected>近 30 天</option>
+          <option value="90">近 90 天</option>
+        </select>
+        <button id="reviewTidy" class="mini">一键整理</button>
+        <button id="reviewCopy" class="mini">复制周报</button>
+      </div>
+      <div id="reviewOut" class="review"></div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="panel-settings" class="panel">
+      <h2>设置</h2>
+
+      <div class="set-block">
+        <h3>应用锁（私密保护）</h3>
+        <p class="muted">网页版无法使用指纹/面容，改用 4 位密码。开启后私密待办/分类需解锁可见。</p>
         <div class="row">
-          <button id="aiSave" class="btn">保存配置</button>
-          <button id="aiReset" class="btn">用本机规则</button>
+          <label><input type="checkbox" id="lockEnabled" /> 启用应用锁</label>
+          <input id="lockPass" class="mini" placeholder="4 位密码" maxlength="12" />
+          <button id="lockSave" class="mini">保存</button>
         </div>
+        <div id="lockHint" class="muted"></div>
       </div>
 
-      <div class="card">
-        <h2>AI 快捷操作</h2>
+      <div class="set-block">
+        <h3>GitHub 同步（跨设备备份）</h3>
         <div class="row">
-          <textarea id="aiInput" class="ai-input" placeholder="输入一段话，让 AI 帮你拆解成待办 / 润色 / 总结…"></textarea>
+          <input id="ghOwner" class="mini" placeholder="owner" />
+          <input id="ghRepo" class="mini" placeholder="repo" />
+          <input id="ghBranch" class="mini" placeholder="branch" />
+          <input id="ghToken" class="mini" placeholder="PAT" type="password" />
         </div>
         <div class="row">
-          <button id="aiGen" class="btn">✨ 生成待办</button>
-          <button id="aiPolish" class="btn">🪄 润色文本</button>
-          <button id="aiSum" class="btn">📝 总结要点</button>
+          <button id="ghSave" class="mini">保存配置</button>
+          <button id="ghPull" class="mini">拉取</button>
+          <button id="ghPush" class="mini">推送</button>
+        </div>
+        <div id="ghStatus" class="muted"></div>
+      </div>
+
+      <div class="set-block">
+        <h3>AI 助手（OpenAI 兼容，自备 Key）</h3>
+        <div class="row">
+          <input id="aiBase" class="mini" placeholder="Base URL" />
+          <input id="aiKey" class="mini" placeholder="API Key" type="password" />
+          <input id="aiModel" class="mini" placeholder="model" />
+        </div>
+        <div class="row">
+          <button id="aiSave" class="mini">保存</button>
+          <button id="aiReset" class="mini">切回本机规则</button>
+        </div>
+        <div class="row ai-tools">
+          <textarea id="aiInput" class="ai-input" placeholder="粘贴一段话，生成待办 / 润色 / 总结；或在此对话"></textarea>
+        </div>
+        <div class="row">
+          <button id="aiGen" class="mini">生成待办</button>
+          <button id="aiPolish" class="mini">润色</button>
+          <button id="aiSum" class="mini">总结</button>
+          <button id="aiApply" class="mini" hidden>应用</button>
+          <button id="chatSend" class="mini">发送</button>
         </div>
         <pre id="aiResult" class="ai-result" hidden></pre>
-        <div class="row">
-          <button id="aiApply" class="btn primary" hidden>✓ 应用结果到待办</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>AI 聊天</h2>
         <div id="chatLog" class="chat-log"></div>
-        <div class="row chat-row">
-          <input id="chatInput" class="chat-input" type="text" placeholder="和 AI 聊聊你的计划…" />
-          <button id="chatSend" class="btn primary">发送</button>
+      </div>
+
+      <div class="set-block">
+        <h3>数据</h3>
+        <div class="row">
+          <button id="exportBtn" class="mini">导出 JSON</button>
+          <button id="exportMd" class="mini">导出 Markdown</button>
+          <button id="exportCsv" class="mini">导出 CSV</button>
+          <button id="exportIcs" class="mini">导出 .ics</button>
+          <input id="importFile" type="file" accept="application/json" hidden />
+          <button id="importBtn" class="mini">导入 JSON</button>
+        </div>
+        <div class="row">
+          <label>回收站保留
+            <select id="retention" class="mini">
+              <option value="7">7 天</option>
+              <option value="14">14 天</option>
+              <option value="30">30 天</option>
+              <option value="90">90 天</option>
+              <option value="0">永久</option>
+            </select>
+          </label>
+          <button id="clearBtn" class="mini danger">清空本机</button>
         </div>
       </div>
-    </section>
 
-    <!-- 说明面板 -->
-    <section id="panel-about" class="panel">
-      <div class="card">
-        <h2>关于轻刻网页版</h2>
-        <p>轻刻 Android App（v2.0.0 起）是<strong>完全离线</strong>应用：不声明网络权限、无账号体系。所有<strong>在线能力</strong>（多端同步、AI 助手）集中在本网页版，二者通过 <code>lightmark-data.json</code> 数据契约互通。</p>
-        <h3>数据契约（与 App 一致）</h3>
-        <pre class="code">{
-  "version": 1,
-  "lastSync": 1690000000000,
-  "todos": [ TodoItem, ... ],
-  "categories": [ Category, ... ]
-}</pre>
-        <p class="muted">TodoItem / Category 字段命名与 App 的 <code>SyncData</code> 完全相同（驼峰、color 为数字）。App 导出的备份文件可直接在本页「导入」，反之亦然。</p>
-        <h3>托管</h3>
-        <p class="muted">本页为纯静态站点，可直接放 GitHub Pages / 任意静态托管，无需备案、无后端。</p>
+      <div class="set-block">
+        <h3>显示</h3>
+        <div class="row">
+          <label>列表密度
+            <select id="density" class="mini">
+              <option value="comfortable">宽松</option>
+              <option value="compact">紧凑</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="cheerOn" checked /> 完成鼓励语</label>
+        </div>
       </div>
     </section>
   </main>
 
-  <!-- 待办编辑弹窗 -->
-  <div id="todoModal" class="modal" hidden>
-    <div class="modal-box">
-      <h2 id="todoModalTitle">新建待办</h2>
-      <div class="form-grid">
-        <label class="full">标题
-          <input id="fTitle" type="text" placeholder="要做什么？" />
-        </label>
-        <label class="full">描述
-          <textarea id="fDesc" rows="3" placeholder="细节（支持轻量 Markdown）"></textarea>
-        </label>
-        <label>优先级
-          <select id="fPriority">
-            <option value="IDLE">空闲</option>
-            <option value="LOW">低</option>
-            <option value="MEDIUM" selected>中</option>
-            <option value="HIGH">高</option>
-            <option value="URGENT">紧急</option>
-          </select>
-        </label>
-        <label>状态
-          <select id="fStatus">
-            <option value="ACTIVE">进行中</option>
-            <option value="PAUSED">暂停</option>
-            <option value="CANCELLED">已取消</option>
-          </select>
-        </label>
-        <label>分类
-          <select id="fCategory"></select>
-        </label>
-        <label>截止日期
-          <input id="fDue" type="date" />
-        </label>
-        <label>开始日期
-          <input id="fStart" type="date" />
-        </label>
-        <label>重复
-          <select id="fRecur">
-            <option value="NONE">不重复</option>
-            <option value="DAILY">每天</option>
-            <option value="WEEKLY">每周</option>
-            <option value="MONTHLY">每月</option>
-            <option value="INTERVAL:3">每 3 天</option>
-          </select>
-        </label>
-        <label>标签（逗号分隔）
-          <input id="fTags" type="text" placeholder="工作, 重要" />
-        </label>
-        <label class="checkbox"><input id="fPinned" type="checkbox" /> 置顶</label>
-        <label class="checkbox"><input id="fArchived" type="checkbox" /> 归档</label>
-      </div>
-      <div class="row modal-actions">
-        <button id="todoCancel" class="btn">取消</button>
-        <button id="todoSave" class="btn primary">保存</button>
+  <!-- 番茄钟浮窗 -->
+  <button id="pomoFab" class="fab" title="番茄钟">🍅</button>
+  <div id="pomoBox" class="pomo-box" hidden>
+    <div class="pomo-time" id="pomoTime">25:00</div>
+    <div class="pomo-mode" id="pomoMode">专注</div>
+    <div class="row center">
+      <button id="pomoStart" class="mini">开始</button>
+      <button id="pomoReset" class="mini">重置</button>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗 ============ -->
+  <!-- 登录 / 欢迎 -->
+  <div id="loginModal" class="modal" hidden>
+    <div class="modal-card login-card">
+      <h2>欢迎使用 轻刻 · 网页版</h2>
+      <p class="muted">你的数据只存在本浏览器，也可同步到 GitHub。</p>
+      <input id="loginName" class="mini" placeholder="怎么称呼你？（可选）" />
+      <div class="row center">
+        <button id="loginEnter" class="primary">开始使用</button>
+        <button id="loginSkip" class="mini">跳过</button>
       </div>
     </div>
   </div>
 
-  <!-- 分类管理弹窗 -->
+  <!-- 应用锁解锁 -->
+  <div id="unlockModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>🔒 已锁定</h2>
+      <p class="muted">输入密码以查看私密内容。</p>
+      <input id="unlockPass" class="mini" placeholder="密码" type="password" />
+      <div class="row center">
+        <button id="unlockBtn" class="primary">解锁</button>
+      </div>
+      <div id="unlockErr" class="err"></div>
+    </div>
+  </div>
+
+  <!-- 待办编辑 -->
+  <div id="todoModal" class="modal" hidden>
+    <div class="modal-card wide">
+      <h2 id="todoModalTitle">新建待办</h2>
+      <label>标题<input id="fTitle" class="mini full" /></label>
+      <label>备注<textarea id="fDesc" class="mini full"></textarea></label>
+      <div class="grid2">
+        <label>优先级<select id="fPriority" class="mini full"></select></label>
+        <label>状态<select id="fStatus" class="mini full"></select></label>
+        <label>分类<select id="fCategory" class="mini full"></select></label>
+        <label>重复<select id="fRecur" class="mini full">
+          <option value="NONE">不重复</option>
+          <option value="DAILY">每天</option>
+          <option value="WEEKLY">每周</option>
+          <option value="MONTHLY">每月</option>
+        </select></label>
+        <label>开始<input id="fStart" class="mini full" type="date" /></label>
+        <label>截止<input id="fDue" class="mini full" type="date" /></label>
+      </div>
+      <label>标签（逗号分隔）<input id="fTags" class="mini full" /></label>
+      <div class="row">
+        <label><input type="checkbox" id="fPinned" /> 置顶</label>
+        <label><input type="checkbox" id="fBlocked" /> 阻塞</label>
+        <label><input type="checkbox" id="fPrivate" /> 私密</label>
+        <label><input type="checkbox" id="fArchived" /> 归档</label>
+      </div>
+      <div id="subtaskBox" class="subtasks">
+        <div class="muted">子任务</div>
+        <ul id="subtaskList" class="subtask-list"></ul>
+        <div class="row">
+          <input id="subInput" class="mini full" placeholder="添加子任务…" />
+          <button id="subAdd" class="mini">添加</button>
+        </div>
+      </div>
+      <div class="row center">
+        <button id="todoSave" class="primary">保存</button>
+        <button id="todoCancel" class="mini">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类管理 -->
   <div id="catModal" class="modal" hidden>
-    <div class="modal-box">
+    <div class="modal-card">
       <h2>分类管理</h2>
       <ul id="catList" class="cat-list"></ul>
-      <div class="form-grid">
-        <label>名称
-          <input id="catName" type="text" placeholder="分类名" />
-        </label>
-        <label>图标
-          <input id="catIcon" type="text" placeholder="folder" />
-        </label>
-        <label>颜色
-          <input id="catColor" type="color" value="#6200ee" />
-        </label>
-      </div>
       <div class="row">
-        <button id="catAdd" class="btn">+ 添加</button>
+        <input id="catName" class="mini" placeholder="分类名" />
+        <input id="catIcon" class="mini" placeholder="图标 emoji" />
+        <input id="catColor" class="mini" type="color" value="#6200ee" />
+        <button id="catAdd" class="mini">添加</button>
       </div>
-      <div class="row modal-actions">
-        <button id="catClose" class="btn primary">完成</button>
+      <div class="row center"><button id="catClose" class="mini">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 习惯编辑 -->
+  <div id="habitModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2 id="habitModalTitle">新建习惯</h2>
+      <label>名称<input id="hName" class="mini full" /></label>
+      <label>图标<input id="hIcon" class="mini full" placeholder="emoji" /></label>
+      <div class="grid2">
+        <label>周期
+          <select id="hPeriod" class="mini full">
+            <option value="1">每天</option>
+            <option value="2">每 2 天</option>
+            <option value="7">每周</option>
+          </select>
+        </label>
+        <label>每周期目标次数<input id="hTarget" class="mini full" type="number" value="1" /></label>
+      </div>
+      <div class="row center">
+        <button id="habitSave" class="primary">保存</button>
+        <button id="habitCancel" class="mini">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目标编辑 -->
+  <div id="goalModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2 id="goalModalTitle">新建目标</h2>
+      <label>标题<input id="gTitle" class="mini full" /></label>
+      <div class="grid2">
+        <label>目标值<input id="gTarget" class="mini full" type="number" value="100" /></label>
+        <label>单位<input id="gUnit" class="mini full" placeholder="如 次 / 页 / 元" /></label>
+      </div>
+      <label>里程碑（每行一个）<textarea id="gMiles" class="mini full"></textarea></label>
+      <div class="row center">
+        <button id="goalSave" class="primary">保存</button>
+        <button id="goalCancel" class="mini">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模板编辑 -->
+  <div id="tplModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2 id="tplModalTitle">新建模板</h2>
+      <label>模板名<input id="tName" class="mini full" /></label>
+      <label>图标<input id="tIcon" class="mini full" placeholder="emoji" /></label>
+      <label>标题（支持占位）<input id="tTitle" class="mini full" /></label>
+      <label>优先级<select id="tPriority" class="mini full"></select></label>
+      <label>子任务（每行一个）<textarea id="tSubs" class="mini full"></textarea></label>
+      <div class="row center">
+        <button id="tplSave" class="primary">保存</button>
+        <button id="tplCancel" class="mini">取消</button>
       </div>
     </div>
   </div>

@@ -624,6 +624,15 @@
 
     // 点遮罩关闭弹窗
     $$('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) m.hidden = true; }));
+
+    // 登录 / 欢迎页（可跳过）
+    const closeLogin = () => { sessionStorage.setItem('lm_login_done', '1'); $('#loginModal').hidden = true; };
+    $('#loginEnter').addEventListener('click', () => {
+      const n = $('#loginName').value.trim();
+      if (n) localStorage.setItem('lm_web_name', n);
+      closeLogin();
+    });
+    $('#loginSkip').addEventListener('click', closeLogin);
   }
 
   function init() {
@@ -632,6 +641,8 @@
     renderCategorySelects();
     renderTodos();
     bind();
+    // 打开先显示可跳过的登录 / 欢迎页（同一会话内只显示一次）
+    if (!sessionStorage.getItem('lm_login_done')) $('#loginModal').hidden = false;
   }
   document.addEventListener('DOMContentLoaded', init);
 })();

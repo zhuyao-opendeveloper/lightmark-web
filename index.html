@@ -8,6 +8,22 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- 登录 / 欢迎页（可跳过，由 app.js 控制显示） -->
+  <div id="loginModal" class="modal" hidden>
+    <div class="modal-box">
+      <div class="login-logo">轻</div>
+      <h2>欢迎使用 轻刻 · 网页版</h2>
+      <p class="muted">本地优先的待办管理，可配合 App 与 GitHub 多端同步。<br/>无需注册，数据只存在你本机。</p>
+      <label style="display:block;text-align:left;font-size:13px;color:var(--text-muted);margin-bottom:4px">昵称（可选）
+        <input id="loginName" type="text" placeholder="怎么称呼你？" style="width:100%;margin-top:6px" />
+      </label>
+      <div class="login-actions">
+        <button id="loginEnter" class="btn primary">开始使用</button>
+        <button id="loginSkip" class="btn">跳过</button>
+      </div>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="brand">
       <span class="logo">轻</span>
